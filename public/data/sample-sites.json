@@ -1,0 +1,18 @@
+{
+  "datasetId": "sample-sites",
+  "description": "Twelve globally-scattered reference sites with synthetic metrics. Used when DATA_PROVIDER=static or when Kaggle ingestion is unavailable.",
+  "sites": [
+    { "id": "NYC", "name": "New York", "longitude": -74.006, "latitude": 40.7128, "metric": 82.3 },
+    { "id": "LDN", "name": "London", "longitude": -0.1276, "latitude": 51.5074, "metric": 80.9 },
+    { "id": "TYO", "name": "Tokyo", "longitude": 139.6917, "latitude": 35.6895, "metric": 84.5 },
+    { "id": "SIN", "name": "Singapore", "longitude": 103.8198, "latitude": 1.3521, "metric": 83.1 },
+    { "id": "SYD", "name": "Sydney", "longitude": 151.2093, "latitude": -33.8688, "metric": 83.0 },
+    { "id": "GRU", "name": "Sao Paulo", "longitude": -46.6333, "latitude": -23.5505, "metric": 75.7 },
+    { "id": "JNB", "name": "Johannesburg", "longitude": 28.0473, "latitude": -26.2041, "metric": 64.2 },
+    { "id": "DEL", "name": "Delhi", "longitude": 77.1025, "latitude": 28.7041, "metric": 70.4 },
+    { "id": "CAI", "name": "Cairo", "longitude": 31.2357, "latitude": 30.0444, "metric": 71.8 },
+    { "id": "MOW", "name": "Moscow", "longitude": 37.6173, "latitude": 55.7558, "metric": 72.3 },
+    { "id": "YYZ", "name": "Toronto", "longitude": -79.3832, "latitude": 43.6532, "metric": 81.9 },
+    { "id": "MEX", "name": "Mexico City", "longitude": -99.1332, "latitude": 19.4326, "metric": 75.1 }
+  ]
+}

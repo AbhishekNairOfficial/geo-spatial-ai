@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+.DS_Store
+*.log
+.vercel
+next-env.d.ts.bak
+
+# Generated Kaggle data (regenerated on every build)
+public/data/kaggle/features.geojson
+public/data/kaggle/rollups.json
+public/data/kaggle/summary.json
