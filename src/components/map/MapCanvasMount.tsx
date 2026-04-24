@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { MapScope } from "./mapScope";
 
 const MapCanvas = dynamic(() => import("./MapCanvas"), {
   ssr: false,
@@ -11,6 +12,12 @@ const MapCanvas = dynamic(() => import("./MapCanvas"), {
   ),
 });
 
-export default function MapCanvasMount() {
-  return <MapCanvas />;
+export type { MapScope } from "./mapScope";
+
+export default function MapCanvasMount({
+  mapScope = "global",
+}: {
+  mapScope?: MapScope;
+}) {
+  return <MapCanvas mapScope={mapScope} />;
 }

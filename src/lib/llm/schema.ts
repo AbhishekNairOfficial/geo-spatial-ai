@@ -35,6 +35,8 @@ export const GeoFeatureSchema = z.object({
     iso3: z.string(),
     name: z.string(),
     note: z.string(),
+    zip: z.string(),
+    state: z.string(),
   }),
 });
 
@@ -54,6 +56,10 @@ export const AssistantPayloadSchema = z.object({
   geoFeatures: z.array(GeoFeatureSchema),
   kpis: z.array(KpiSchema),
   mapCommand: MapCommandSchema.optional(),
+  highlightTopN: z.number().int().min(0).max(10_000),
+  highlightZipCodes: z.array(z.string()),
+  highlightMetric: z.string(),
+  highlightUsState: z.string(),
 });
 
 export type AssistantPayloadSchemaType = z.infer<typeof AssistantPayloadSchema>;
@@ -110,13 +116,15 @@ const jsonSchemaGeoProperties = {
   type: "object" as const,
   additionalProperties: false,
   description:
-    "Optional metadata. Use empty strings for unused keys. ISO-3 code when country-keyed.",
+    "For US ZCTA, set zip to 5 digits and state; leave iso3 empty. For world country data, set iso3 and use empty strings for zip/state.",
   properties: {
     iso3: { type: "string" as const },
     name: { type: "string" as const },
     note: { type: "string" as const },
+    zip: { type: "string" as const },
+    state: { type: "string" as const },
   },
-  required: ["iso3", "name", "note"] as const,
+  required: ["iso3", "name", "note", "zip", "state"] as const,
 } as const;
 
 export const assistantResponseJsonSchema = {
@@ -137,7 +145,7 @@ export const assistantResponseJsonSchema = {
       geoFeatures: {
         type: "array",
         description:
-          "Countries / points to highlight on the map. Use ISO-3 codes as `id` when possible.",
+          "Map highlights. US ZIP: use 5-digit id and polygon/MultiPolygon geometry, or leave empty and use highlightTopN / highlightZipCodes. World: use ISO-3 for id when country-keyed.",
         items: {
           type: "object",
           additionalProperties: false,
@@ -213,8 +221,38 @@ export const assistantResponseJsonSchema = {
         },
         required: ["flyTo", "bounds"],
       },
+      highlightTopN: {
+        type: "integer",
+        description:
+          "US ZIP: number of top ZIPs to show by highlightMetric (e.g. 20). Use 0 for rule-based lists only (use highlightZipCodes).",
+      },
+      highlightZipCodes: {
+        type: "array",
+        items: { type: "string" },
+        description:
+          "5-digit ZIPs to show when using explicit rule-based selection. Empty if using highlightTopN or raw geoFeatures only.",
+      },
+      highlightMetric: {
+        type: "string",
+        description:
+          "Column name to rank or color (e.g. N1, A00100). Empty to use the dataset default primary metric.",
+      },
+      highlightUsState: {
+        type: "string",
+        description:
+          "For US-wide top-N questions, leave \"\". If the user names a state (e.g. Washington, WA), set this to the 2-letter USPS code (e.g. WA) or 2-digit FIPS (e.g. 53) so top-N ZIPs are chosen within that state only. Empty string when not state-scoped.",
+      },
     },
-    required: ["message", "geoFeatures", "kpis", "mapCommand"],
+    required: [
+      "message",
+      "geoFeatures",
+      "kpis",
+      "mapCommand",
+      "highlightTopN",
+      "highlightZipCodes",
+      "highlightMetric",
+      "highlightUsState",
+    ],
   },
 } as const;
 

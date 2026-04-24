@@ -40,6 +40,8 @@ export class StaticDataProvider implements DataProvider {
       datasetId: file.datasetId,
       description: file.description,
       rowCount: file.sites.length,
+      geography: "static",
+      primaryMetric: null,
       columns: [
         { name: "id", type: "string" },
         { name: "name", type: "string" },
@@ -64,6 +66,13 @@ export class StaticDataProvider implements DataProvider {
       },
       label: s.name,
       value: s.metric,
+      properties: {
+        iso3: s.id,
+        name: s.name,
+        note: "",
+        zip: "",
+        state: "",
+      },
     }));
 
     const values = file.sites.map((s) => s.metric);
@@ -72,6 +81,10 @@ export class StaticDataProvider implements DataProvider {
         id: "sites",
         label: "Reference sites",
         value: file.sites.length,
+        unit: "",
+        direction: "flat",
+        delta: 0,
+        timeframe: "",
       },
       {
         id: "avg",
@@ -81,6 +94,8 @@ export class StaticDataProvider implements DataProvider {
         ),
         unit: "",
         direction: "flat",
+        delta: 0,
+        timeframe: "",
       },
     ];
 

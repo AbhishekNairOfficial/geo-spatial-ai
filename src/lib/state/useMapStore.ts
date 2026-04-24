@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { FlyToInterpolator } from "@deck.gl/core";
 import type { GeoFeature, MapCommand } from "@/lib/llm/types";
 
 export type ViewState = {
@@ -7,6 +8,9 @@ export type ViewState = {
   zoom: number;
   pitch: number;
   bearing: number;
+  /** Used only when Deck.gl animates; omitted after `onViewStateChange` updates. */
+  transitionDuration?: number;
+  transitionInterpolator?: FlyToInterpolator;
 };
 
 type MapState = {
@@ -29,7 +33,17 @@ export const useMapStore = create<MapState>((set) => ({
   features: [],
   mapCommand: undefined,
   setViewState: (v) =>
-    set((s) => ({ viewState: { ...s.viewState, ...v } })),
+    set((s) => {
+      const merged = { ...s.viewState, ...v };
+      if (
+        !("transitionDuration" in v) &&
+        !("transitionInterpolator" in v)
+      ) {
+        delete merged.transitionDuration;
+        delete merged.transitionInterpolator;
+      }
+      return { viewState: merged };
+    }),
   setFeatures: (features) => set({ features }),
   setMapCommand: (mapCommand) => set({ mapCommand }),
 }));

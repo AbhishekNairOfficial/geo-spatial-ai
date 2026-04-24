@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { buildSystemPrompt, getLlm, LlmError } from "@/lib/llm";
+import { ensureAssistantMessage } from "@/lib/llm/ensureAssistantMessage";
+import { applyZipDataEnrichment } from "@/lib/llm/enrichZipPayload";
 import { assistantResponseJsonSchema } from "@/lib/llm/schema";
 import { getDataProvider } from "@/lib/data";
 
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
     const summary = await data.getSummary();
 
     const llm = getLlm();
-    const payload = await llm.chat({
+    let payload = await llm.chat({
       messages: parsed.data.messages,
       systemPrompt: buildSystemPrompt(summary),
       responseSchema: assistantResponseJsonSchema.schema as Record<
@@ -47,6 +49,9 @@ export async function POST(req: Request) {
         unknown
       >,
     });
+
+    payload = await applyZipDataEnrichment(summary, data, payload);
+    payload = ensureAssistantMessage(payload);
 
     return NextResponse.json(payload);
   } catch (err) {

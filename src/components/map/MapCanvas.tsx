@@ -1,46 +1,115 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { DeckGL } from "@deck.gl/react";
 import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import type { Layer } from "@deck.gl/core";
-import MapGL, { type MapRef } from "react-map-gl/mapbox";
+import { FlyToInterpolator } from "@deck.gl/core";
+import MapGL from "react-map-gl/mapbox";
+import { fitBounds } from "@math.gl/web-mercator";
+import type { LngLatBoundsLike } from "mapbox-gl";
 import type { Feature, FeatureCollection } from "geojson";
 import { useMapStore } from "@/lib/state/useMapStore";
 import type { GeoFeature } from "@/lib/llm/types";
 import { divergingColor, indigoFallbackColor } from "./color-scale";
+import type { MapScope } from "./mapScope";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 const MAP_STYLE = "mapbox://styles/mapbox/light-v11";
 
-export default function MapCanvas() {
+/** Continental US (lower 48 + small buffer). */
+const US_W = -128;
+const US_S = 22;
+const US_E = -65;
+const US_N = 50;
+const US_MAX_BOUNDS: LngLatBoundsLike = [
+  [US_W, US_S],
+  [US_E, US_N],
+];
+
+const US_DEFAULT_VIEW = {
+  longitude: -98,
+  latitude: 39.5,
+  zoom: 3.45,
+  pitch: 0,
+  bearing: 0,
+} as const;
+
+export default function MapCanvas({ mapScope = "global" }: { mapScope?: MapScope }) {
   const viewState = useMapStore((s) => s.viewState);
   const setViewState = useMapStore((s) => s.setViewState);
+  const setMapCommand = useMapStore((s) => s.setMapCommand);
   const features = useMapStore((s) => s.features);
   const mapCommand = useMapStore((s) => s.mapCommand);
-  const mapRef = useRef<MapRef>(null);
+  const scopeApplied = useRef(false);
 
+  useLayoutEffect(() => {
+    if (mapScope !== "us" || scopeApplied.current) return;
+    scopeApplied.current = true;
+    setViewState(US_DEFAULT_VIEW);
+  }, [mapScope, setViewState]);
+
+  /**
+   * DeckGL only uses `initialViewState` on mount; we must drive the camera with
+   * controlled `viewState` + transitions. `map.getMap().flyTo()` fights Deck.
+   */
   useEffect(() => {
     if (!mapCommand) return;
-    const map = mapRef.current?.getMap();
-    if (!map) return;
+    const w =
+      typeof window !== "undefined" ? window.innerWidth : 1200;
+    const h =
+      typeof window !== "undefined" ? window.innerHeight : 800;
+
+    let longitude: number;
+    let latitude: number;
+    let zoom: number;
+
     if (mapCommand.bounds) {
-      const [w, s, e, n] = mapCommand.bounds;
-      map.fitBounds(
-        [
-          [w, s],
-          [e, n],
+      let [west, south, east, north] = mapCommand.bounds;
+      if (mapScope === "us") {
+        west = Math.max(west, US_W);
+        south = Math.max(south, US_S);
+        east = Math.min(east, US_E);
+        north = Math.min(north, US_N);
+      }
+      const fitted = fitBounds({
+        width: w,
+        height: h,
+        bounds: [
+          [west, south],
+          [east, north],
         ],
-        { padding: 120, duration: 1200 }
-      );
-    } else if (mapCommand.flyTo) {
-      map.flyTo({
-        center: [mapCommand.flyTo.longitude, mapCommand.flyTo.latitude],
-        zoom: mapCommand.flyTo.zoom ?? 4,
-        duration: 1200,
+        padding: 120,
+        maxZoom: 14,
       });
+      longitude = fitted.longitude;
+      latitude = fitted.latitude;
+      zoom = fitted.zoom;
+    } else if (mapCommand.flyTo) {
+      ({ longitude, latitude, zoom } = {
+        longitude: mapCommand.flyTo.longitude,
+        latitude: mapCommand.flyTo.latitude,
+        zoom: mapCommand.flyTo.zoom ?? 4,
+      });
+      if (mapScope === "us") {
+        longitude = Math.min(US_E, Math.max(US_W, longitude));
+        latitude = Math.min(US_N, Math.max(US_S, latitude));
+      }
+    } else {
+      return;
     }
-  }, [mapCommand]);
+
+    setViewState({
+      longitude,
+      latitude,
+      zoom,
+      pitch: 0,
+      bearing: 0,
+      transitionDuration: 1200,
+      transitionInterpolator: new FlyToInterpolator(),
+    });
+    setMapCommand(undefined);
+  }, [mapCommand, mapScope, setViewState, setMapCommand]);
 
   const { polygonCollection, points } = useMemo(
     () => splitFeatures(features),
@@ -62,6 +131,7 @@ export default function MapCanvas() {
     const out: Layer[] = [];
 
     if (polygonCollection.features.length > 0) {
+      const isUsZip = mapScope === "us";
       out.push(
         new GeoJsonLayer({
           id: "llm-polygons",
@@ -69,17 +139,25 @@ export default function MapCanvas() {
           filled: true,
           stroked: true,
           lineWidthUnits: "pixels",
-          getLineWidth: 1,
-          getLineColor: [255, 255, 255, 200],
+          getLineWidth: isUsZip ? 2.5 : 1,
+          getLineColor: isUsZip
+            ? [55, 48, 163, 255]
+            : [255, 255, 255, 200],
           getFillColor: (feature: unknown) => {
             const f = feature as Feature;
             const value = (f.properties as { value?: number } | null)?.value;
-            if (typeof value !== "number") return indigoFallbackColor(180);
-            return divergingColor(value, valueRange[0], valueRange[1], 210);
+            if (typeof value !== "number")
+              return indigoFallbackColor(isUsZip ? 200 : 180);
+            return divergingColor(
+              value,
+              valueRange[0],
+              valueRange[1],
+              isUsZip ? 230 : 210
+            );
           },
           pickable: true,
           autoHighlight: true,
-          highlightColor: [67, 82, 229, 80],
+          highlightColor: [67, 82, 229, 120],
         })
       );
     }
@@ -112,7 +190,7 @@ export default function MapCanvas() {
     }
 
     return out;
-  }, [polygonCollection, points, valueRange]);
+  }, [mapScope, polygonCollection, points, valueRange]);
 
   if (!MAPBOX_TOKEN) {
     return (
@@ -131,19 +209,25 @@ export default function MapCanvas() {
   return (
     <div className="absolute inset-0">
       <DeckGL
-        initialViewState={viewState}
+        viewState={viewState}
         controller
         layers={layers}
         onViewStateChange={(evt) => {
-          const vs = evt.viewState as Partial<typeof viewState>;
-          setViewState(vs);
+          const vs = evt.viewState as Record<string, unknown>;
+          setViewState({
+            longitude: vs.longitude as number,
+            latitude: vs.latitude as number,
+            zoom: vs.zoom as number,
+            pitch: (vs.pitch as number) ?? 0,
+            bearing: (vs.bearing as number) ?? 0,
+          });
         }}
       >
         <MapGL
-          ref={mapRef}
           reuseMaps
           mapStyle={MAP_STYLE}
           mapboxAccessToken={MAPBOX_TOKEN}
+          maxBounds={mapScope === "us" ? US_MAX_BOUNDS : undefined}
         />
       </DeckGL>
     </div>
