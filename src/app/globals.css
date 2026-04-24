@@ -59,3 +59,57 @@ body {
   background: rgba(30, 30, 31, 0.12);
   border-radius: 999px;
 }
+
+/** Map pick tooltip inner card (host styles reset in getTooltip + style) */
+.map-tooltip-geo {
+  font-family: var(--font-sans);
+  color: var(--color-foreground);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.35rem 1.2rem;
+  min-width: 12.5rem;
+  max-width: 19rem;
+}
+
+.map-tooltip-geo__title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0 0 0.8rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-foreground);
+}
+
+.map-tooltip-geo__rows {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) 1fr;
+  gap: 0.5rem 1.1rem;
+  align-items: baseline;
+  line-height: 1.45;
+  margin: 0;
+}
+.map-tooltip-geo__rows dt,
+.map-tooltip-geo__rows dd {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.map-tooltip-geo__k {
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.map-tooltip-geo__v {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--color-foreground);
+}

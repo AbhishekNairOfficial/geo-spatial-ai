@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { DeckGL } from "@deck.gl/react";
 import { GeoJsonLayer, ScatterplotLayer } from "@deck.gl/layers";
-import type { Layer } from "@deck.gl/core";
+import type { Layer, PickingInfo } from "@deck.gl/core";
 import { FlyToInterpolator } from "@deck.gl/core";
 import MapGL from "react-map-gl/mapbox";
 import { fitBounds } from "@math.gl/web-mercator";
@@ -11,8 +11,86 @@ import type { LngLatBoundsLike } from "mapbox-gl";
 import type { Feature, FeatureCollection } from "geojson";
 import { useMapStore } from "@/lib/state/useMapStore";
 import type { GeoFeature } from "@/lib/llm/types";
+import { fipsToUsps } from "@/lib/geo/usStateFips";
 import { divergingColor, indigoFallbackColor } from "./color-scale";
 import type { MapScope } from "./mapScope";
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Resets deck.gl’s default dark tooltip host (see `TooltipWidget` inline styles). */
+const MAP_TOOLTIP_HOST = {
+  className: "deck-tooltip",
+  style: {
+    backgroundColor: "transparent",
+    padding: "0",
+    border: "0",
+    boxShadow: "none",
+    color: "inherit",
+    maxWidth: "min(22rem, calc(100vw - 1.5rem))",
+  } as const,
+} as const;
+
+function formatFeatureTooltip(f: Feature) {
+  const p = (f.properties ?? {}) as {
+    id?: string;
+    label?: string;
+    value?: number;
+    zip?: string;
+    state?: string;
+    name?: string;
+    note?: string;
+  };
+  const zip = (p.zip || String(p.id || "")).trim() || "—";
+  const rawSt = p.state?.trim() ?? "";
+  const stateLine =
+    rawSt && /^\d{1,2}$/.test(rawSt)
+      ? `${fipsToUsps(rawSt) ?? "—"} (FIPS ${rawSt.padStart(2, "0")})`
+      : rawSt || "—";
+  const title = p.label || p.name || (zip !== "—" ? `ZIP ${zip}` : "Selected area");
+  const metricName = p.note?.trim() || "Value";
+  const val =
+    typeof p.value === "number" && Number.isFinite(p.value)
+      ? p.value.toLocaleString()
+      : "—";
+  return {
+    ...MAP_TOOLTIP_HOST,
+    html: `<div class="map-tooltip-geo">
+  <p class="map-tooltip-geo__title">${escapeHtml(title)}</p>
+  <dl class="map-tooltip-geo__rows">
+    <dt class="map-tooltip-geo__k">ZIP</dt>
+    <dd class="map-tooltip-geo__v">${escapeHtml(zip)}</dd>
+    <dt class="map-tooltip-geo__k">State</dt>
+    <dd class="map-tooltip-geo__v">${escapeHtml(stateLine)}</dd>
+    <dt class="map-tooltip-geo__k">${escapeHtml(metricName)}</dt>
+    <dd class="map-tooltip-geo__v">${escapeHtml(val)}</dd>
+  </dl>
+</div>`,
+  };
+}
+
+function formatPointTooltip(d: GeoFeature) {
+  const name = d.label || d.properties?.name || d.id;
+  const val =
+    typeof d.value === "number" && Number.isFinite(d.value)
+      ? d.value.toLocaleString()
+      : "—";
+  return {
+    ...MAP_TOOLTIP_HOST,
+    html: `<div class="map-tooltip-geo">
+  <p class="map-tooltip-geo__title">${escapeHtml(String(name))}</p>
+  <dl class="map-tooltip-geo__rows">
+    <dt class="map-tooltip-geo__k">Value</dt>
+    <dd class="map-tooltip-geo__v">${escapeHtml(val)}</dd>
+  </dl>
+</div>`,
+  };
+}
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 const MAP_STYLE = "mapbox://styles/mapbox/light-v11";
@@ -192,6 +270,18 @@ export default function MapCanvas({ mapScope = "global" }: { mapScope?: MapScope
     return out;
   }, [mapScope, polygonCollection, points, valueRange]);
 
+  const getTooltip = useCallback((info: PickingInfo) => {
+    if (!info.picked || !info.object) return null;
+    const lid = info.layer?.id ?? "";
+    if (lid === "llm-polygons" || lid.startsWith("llm-polygons-")) {
+      return formatFeatureTooltip(info.object as Feature);
+    }
+    if (lid === "llm-points" || lid.startsWith("llm-points-")) {
+      return formatPointTooltip(info.object as GeoFeature);
+    }
+    return null;
+  }, []);
+
   if (!MAPBOX_TOKEN) {
     return (
       <div className="grid h-full w-full place-items-center bg-[color:var(--color-background)] p-8 text-center text-sm text-[color:var(--color-muted)]">
@@ -212,6 +302,10 @@ export default function MapCanvas({ mapScope = "global" }: { mapScope?: MapScope
         viewState={viewState}
         controller
         layers={layers}
+        getTooltip={getTooltip}
+        getCursor={({ isDragging, isHovering }) =>
+          isDragging ? "grabbing" : isHovering ? "pointer" : "grab"
+        }
         onViewStateChange={(evt) => {
           const vs = evt.viewState as Record<string, unknown>;
           setViewState({
