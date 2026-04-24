@@ -8,6 +8,7 @@
   "scripts": {
     "build:data": "tsx scripts/fetch-kaggle-data.ts",
     "prebuild": "tsx scripts/fetch-kaggle-data.ts",
+    "predev": "tsx scripts/ensure-kaggle-data.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

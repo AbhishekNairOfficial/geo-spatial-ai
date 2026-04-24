@@ -68,20 +68,31 @@ const base = path.join(process.cwd(), "public", "data", "kaggle");
 
 /**
  * On Vercel, large `public/data/kaggle/*` files must not be file-traced into
- * the serverless bundle (250 MB limit). Load same-origin over HTTP there; use
- * `fs` locally and on other hosts.
+ * the serverless bundle (250 MB limit). Load over HTTP from the deployment
+ * origin. Optional `KAGGLE_PUBLIC_ORIGIN` fixes custom domains / edge cases.
  */
-function kaggleDataViaHttp(): boolean {
-  return process.env.VERCEL === "1" && Boolean(process.env.VERCEL_URL);
+function kaggleFilesHttpOrigin(): string | null {
+  const custom = process.env.KAGGLE_PUBLIC_ORIGIN?.trim().replace(/\/$/, "");
+  if (custom) {
+    if (!/^https?:\/\//i.test(custom)) {
+      return `https://${custom}`;
+    }
+    return custom;
+  }
+  if (process.env.VERCEL === "1" && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return null;
 }
 
 async function readKaggleFile(name: string): Promise<string> {
-  if (kaggleDataViaHttp()) {
-    const url = `https://${process.env.VERCEL_URL}/data/kaggle/${name}`;
+  const origin = kaggleFilesHttpOrigin();
+  if (origin) {
+    const url = `${origin}/data/kaggle/${name}`;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
       throw new Error(
-        `[kaggle] ${res.status} when fetching ${url} (is Kaggle data in public/?)`
+        `[kaggle] ${res.status} when fetching ${url}. Deploy must include a successful prebuild, or set KAGGLE_PUBLIC_ORIGIN to this app’s public URL.`
       );
     }
     return res.text();

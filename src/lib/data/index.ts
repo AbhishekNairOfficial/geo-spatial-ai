@@ -16,10 +16,17 @@ export async function getDataProvider(): Promise<DataProvider> {
       cached = kaggle;
       return cached;
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.warn(
-        "[data] DATA_PROVIDER=kaggle but ingested artifacts are missing; falling back to StaticDataProvider.",
-        err instanceof Error ? err.message : err
+        "[data] DATA_PROVIDER=kaggle but Kaggle data could not be loaded; falling back to static.",
+        msg
       );
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "[data] Fix: run `npm run build:data` (needs KAGGLE_USERNAME, KAGGLE_KEY, KAGGLE_DATASET in .env). " +
+            "`npm run dev` runs this automatically if public/data/kaggle/ is empty."
+        );
+      }
     }
   }
 

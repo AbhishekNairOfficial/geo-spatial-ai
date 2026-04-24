@@ -75,11 +75,17 @@ See [.env.example](.env.example). Summary:
    KAGGLE_METRIC=N1
    ```
 
-4. Run the ingestion once before starting dev:
+4. **Ingest the data** (required before the app can read Kaggle). Either:
+
+   - Run `npm run dev` — a **`predev` hook** runs `build:data` automatically
+     if `public/data/kaggle/summary.json` is missing, or
+   - Run it explicitly:
 
    ```bash
    npm run build:data
    ```
+
+   `npm run build` / Vercel also run this via `prebuild`, so production stays in sync.
 
    This downloads the Kaggle **CSV** (and, for `us_zip`, a **Census 2020 ZCTA
    shapefile** for boundaries), pre-computes per-area rollups (earliest / latest
@@ -133,7 +139,10 @@ large polygon coordinates.
 1. Push the repo to GitHub.
 2. Import the project at <https://vercel.com/new>.
 3. Copy every variable from `.env.local` into **Project Settings → Environment
-   Variables** (Production and Preview).
+   Variables** (Production and Preview), including `DATA_PROVIDER=kaggle` and
+   all `KAGGLE_*` / `ZCTA_*` values. Optionally set `KAGGLE_PUBLIC_ORIGIN` to your
+   canonical site URL (e.g. `https://your-project.vercel.app`) if the default
+   `VERCEL_URL` fetch path misbehaves.
 4. Deploy. The `prebuild` step fetches the Kaggle CSV; for `us_zip` it also
    fetches the Census ZCTA zip (unless `ZCTA_LOCAL_PATH` is set). Watch the
    build log for `[kaggle] Wrote N features...` and any ZCTA download lines.
