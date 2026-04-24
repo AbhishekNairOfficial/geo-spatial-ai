@@ -66,6 +66,29 @@ interface RollupsFile {
 
 const base = path.join(process.cwd(), "public", "data", "kaggle");
 
+/**
+ * On Vercel, large `public/data/kaggle/*` files must not be file-traced into
+ * the serverless bundle (250 MB limit). Load same-origin over HTTP there; use
+ * `fs` locally and on other hosts.
+ */
+function kaggleDataViaHttp(): boolean {
+  return process.env.VERCEL === "1" && Boolean(process.env.VERCEL_URL);
+}
+
+async function readKaggleFile(name: string): Promise<string> {
+  if (kaggleDataViaHttp()) {
+    const url = `https://${process.env.VERCEL_URL}/data/kaggle/${name}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error(
+        `[kaggle] ${res.status} when fetching ${url} (is Kaggle data in public/?)`
+      );
+    }
+    return res.text();
+  }
+  return fs.readFile(path.join(base, name), "utf8");
+}
+
 let cache: {
   summary: SummaryFile;
   rollups: RollupsFile;
@@ -75,15 +98,15 @@ let cache: {
 async function load() {
   if (cache) return cache;
   const [summary, rollups, features] = await Promise.all([
-    fs
-      .readFile(path.join(base, "summary.json"), "utf8")
-      .then(JSON.parse) as Promise<SummaryFile>,
-    fs
-      .readFile(path.join(base, "rollups.json"), "utf8")
-      .then(JSON.parse) as Promise<RollupsFile>,
-    fs
-      .readFile(path.join(base, "features.geojson"), "utf8")
-      .then(JSON.parse) as Promise<FeatureCollection>,
+    readKaggleFile("summary.json").then(
+      (s) => JSON.parse(s) as SummaryFile
+    ),
+    readKaggleFile("rollups.json").then(
+      (s) => JSON.parse(s) as RollupsFile
+    ),
+    readKaggleFile("features.geojson").then(
+      (s) => JSON.parse(s) as FeatureCollection
+    ),
   ]);
   cache = { summary, rollups, features };
   return cache;

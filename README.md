@@ -4,7 +4,7 @@ Chat-driven geospatial analytics app. Ask a geographic question, the LLM returns
 a chat message plus map features plus numeric KPIs, and the UI renders all three
 in sync.
 
-- **Stack**: Next.js 15 + React 19 + TypeScript + Tailwind 4
+- **Stack**: Next.js 16 + React 19 + TypeScript + Tailwind 4 (Node.js **≥ 20.9**)
 - **Map**: Mapbox GL + deck.gl (choropleths: country- or US-ZIP (ZCTA)–keyed, scatter for lat/lon)
 - **LLM**: provider-agnostic service layer with OpenAI and Azure OpenAI implementations
 - **Data**: pluggable data provider (`static` sample + `kaggle` build-time ingestion)
@@ -18,6 +18,8 @@ cp .env.example .env.local
 npm install
 npm run dev
 ```
+
+Use **Node 20.9+** (required by Next.js 16). Run `npm run lint` and `npm run typecheck` before pushing.
 
 With `DATA_PROVIDER=static`, ask e.g. *"Which site has the highest metric?"*.
 

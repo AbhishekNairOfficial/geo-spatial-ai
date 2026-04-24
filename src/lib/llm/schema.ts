@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 const GeometrySchema = z.object({
   type: z.enum([
@@ -255,10 +254,3 @@ export const assistantResponseJsonSchema = {
     ],
   },
 } as const;
-
-// Re-export a zod-to-json-schema variant in case a provider wants the
-// relaxed (non-strict) form.
-export const relaxedAssistantJsonSchema = zodToJsonSchema(
-  AssistantPayloadSchema,
-  "AssistantPayload"
-);

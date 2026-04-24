@@ -158,9 +158,6 @@ async function main() {
   }
 
   const columns = detectColumns(rows);
-  const hasYear = columns.some(
-    (c) => c.name.toLowerCase() === "year" && c.type === "number"
-  );
   const yearCol = columns.find((c) => c.name.toLowerCase() === "year")?.name;
 
   const numericMetrics = columns

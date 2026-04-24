@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   transpilePackages: ["react-map-gl"],
   // Avoid picking a parent `package-lock.json` as the app root (Next 16 + Turbopack).
   turbopack: { root: projectRoot },
+  // Kaggle JSON/GeoJSON can be hundreds of MB; keep them out of serverless traces.
+  outputFileTracingExcludes: {
+    "/**": ["public/data/kaggle/**/*"],
+  },
 };
 
 export default nextConfig;
