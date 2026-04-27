@@ -318,7 +318,6 @@ export default function MapCanvas({ mapScope = "global" }: { mapScope?: MapScope
         }}
       >
         <MapGL
-          reuseMaps
           mapStyle={MAP_STYLE}
           mapboxAccessToken={MAPBOX_TOKEN}
           maxBounds={mapScope === "us" ? US_MAX_BOUNDS : undefined}

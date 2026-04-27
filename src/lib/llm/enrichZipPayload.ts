@@ -42,7 +42,6 @@ export async function applyZipDataEnrichment(
   payload: AssistantPayload
 ): Promise<AssistantPayload> {
   if (summary.geography !== "us_zip") return payload;
-  if (data.id !== "kaggle") return payload;
 
   const hasTopN = (payload.highlightTopN ?? 0) > 0;
   const hasZips = (payload.highlightZipCodes?.length ?? 0) > 0;

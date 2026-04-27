@@ -6,7 +6,8 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["react-map-gl"],
+  transpilePackages: ["mapbox-gl", "react-map-gl"],
+  allowedDevOrigins: ['127.0.0.1'],
   // Avoid picking a parent `package-lock.json` as the app root (Next 16 + Turbopack).
   turbopack: { root: projectRoot },
   // Kaggle JSON/GeoJSON can be hundreds of MB; keep them out of serverless traces.

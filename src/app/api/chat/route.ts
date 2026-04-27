@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { buildSystemPrompt, getLlm, LlmError } from "@/lib/llm";
-import { ensureAssistantMessage } from "@/lib/llm/ensureAssistantMessage";
-import { applyZipDataEnrichment } from "@/lib/llm/enrichZipPayload";
-import { assistantResponseJsonSchema } from "@/lib/llm/schema";
+import { LlmError } from "@/lib/llm";
 import { getDataProvider } from "@/lib/data";
+import { orchestrateChat } from "@/lib/agent/orchestrator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,20 +37,12 @@ export async function POST(req: Request) {
   try {
     const data = await getDataProvider();
     const summary = await data.getSummary();
-
-    const llm = getLlm();
-    let payload = await llm.chat({
+    const payload = await orchestrateChat({
       messages: parsed.data.messages,
-      systemPrompt: buildSystemPrompt(summary),
-      responseSchema: assistantResponseJsonSchema.schema as Record<
-        string,
-        unknown
-      >,
+      summary,
+      dataProvider: data,
+      requestId: req.headers.get("x-request-id") ?? undefined,
     });
-
-    payload = await applyZipDataEnrichment(summary, data, payload);
-    payload = ensureAssistantMessage(payload);
-
     return NextResponse.json(payload);
   } catch (err) {
     console.error("[api/chat] error:", err);

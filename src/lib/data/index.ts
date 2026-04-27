@@ -1,5 +1,6 @@
 import { StaticDataProvider } from "./providers/static";
 import { KaggleDataProvider } from "./providers/kaggle";
+import { SupabaseDataProvider } from "./providers/supabase";
 import type { DataProvider } from "./provider";
 
 let cached: DataProvider | null = null;
@@ -8,6 +9,20 @@ export async function getDataProvider(): Promise<DataProvider> {
   if (cached) return cached;
 
   const choice = process.env.DATA_PROVIDER ?? "static";
+  if (choice === "supabase") {
+    try {
+      const supabase = new SupabaseDataProvider();
+      await supabase.getSummary();
+      cached = supabase;
+      return cached;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        "[data] DATA_PROVIDER=supabase but Supabase data could not be loaded; falling back to kaggle/static.",
+        msg
+      );
+    }
+  }
   if (choice === "kaggle") {
     try {
       const kaggle = new KaggleDataProvider();

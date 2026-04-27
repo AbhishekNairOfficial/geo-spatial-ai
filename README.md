@@ -7,7 +7,7 @@ in sync.
 - **Stack**: Next.js 16 + React 19 + TypeScript + Tailwind 4 (Node.js **≥ 20.9**)
 - **Map**: Mapbox GL + deck.gl (choropleths: country- or US-ZIP (ZCTA)–keyed, scatter for lat/lon)
 - **LLM**: provider-agnostic service layer with OpenAI and Azure OpenAI implementations
-- **Data**: pluggable data provider (`static` sample + `kaggle` build-time ingestion)
+- **Data**: pluggable data provider (`static` sample + `kaggle` build-time ingestion + `supabase`)
 - **Deploy**: Vercel
 
 ## Quick start
@@ -37,7 +37,8 @@ See [.env.example](.env.example). Summary:
 | `OPENAI_API_KEY`, `OPENAI_MODEL` | Required when `LLM_PROVIDER=openai` |
 | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION` | Required when `LLM_PROVIDER=azure-openai` |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox public token for the basemap |
-| `DATA_PROVIDER` | `static` (default) or `kaggle` |
+| `DATA_PROVIDER` | `static` (default), `kaggle`, or `supabase` |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PRIMARY_METRIC` | Required when `DATA_PROVIDER=supabase` |
 | `KAGGLE_*` | Required when `DATA_PROVIDER=kaggle` — see below |
 | `ZCTA_LOCAL_PATH` | (Optional) Path to a local `cb_2020_us_zcta520_500k.zip` to skip downloading during `us_zip` ingestion |
 | `ZCTA_TIGER_URL` | (Optional) Override URL for the ZCTA cartographic shapefile (default: Census 2020 `cb_2020_us_zcta520_500k`) |
@@ -134,6 +135,66 @@ You can still return `geoFeatures` with real GeoJSON from the model, but
 relying on `highlightTopN` / `highlightZipCodes` avoids the model outputting
 large polygon coordinates.
 
+## Using Supabase as runtime data source
+
+This repo now supports `DATA_PROVIDER=supabase` for runtime ZIP tax + boundary lookups.
+
+1. In Supabase SQL editor, run:
+
+   - [supabase/migrations/0001_zip_tax_tables.sql](supabase/migrations/0001_zip_tax_tables.sql)
+   - If you already imported data with the old schema, also run:
+     [supabase/migrations/0002_zip_tax_multiyear.sql](supabase/migrations/0002_zip_tax_multiyear.sql)
+
+2. Add env vars in `.env.local`:
+
+   ```env
+   DATA_PROVIDER=supabase
+   SUPABASE_URL=https://<your-project>.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+   SUPABASE_PRIMARY_METRIC=N1
+   ```
+
+3. Seed Supabase from existing Kaggle artifacts (after `npm run build:data`):
+
+   ```bash
+   npm run seed:supabase
+   ```
+
+   Or import directly from an IRS SOI ZIP CSV:
+
+   ```env
+   IRS_SOI_CSV_PATH=/absolute/path/to/irs-2022-zip.csv
+   IRS_SOI_TAX_YEAR=2022
+   ```
+
+   ```bash
+   npm run import:irs:soi
+   ```
+
+   To import multiple years at once from files like `19zpallnoagi.csv`, `20zpallnoagi.csv`:
+
+   ```env
+   IRS_SOI_BATCH_DIR=/absolute/path/to/folder-containing-yearly-csvs
+   ```
+
+   Then run the same command:
+
+   ```bash
+   npm run import:irs:soi
+   ```
+
+   The importer auto-detects year from filename prefix (`19` -> 2019, etc) and writes
+   one row per `(zip, year)` to `zip_tax_metrics`.
+
+4. Optional boundary-only refresh:
+
+   ```bash
+   npm run import:zcta
+   ```
+
+   By default this reads `public/data/kaggle/features.geojson`. Override with
+   `ZCTA_GEOJSON_PATH=/absolute/path/to/features.geojson`.
+
 ## Deploying to Vercel
 
 1. Push the repo to GitHub.
@@ -186,7 +247,9 @@ src/
     llm/                   -- provider-agnostic LLM (OpenAI + Azure), `enrichZipPayload` for ZCTA
     data/                  -- pluggable DataProvider (static, kaggle) + geo helpers
     state/                 -- zustand stores (chat, map, kpi)
-scripts/fetch-kaggle-data.ts  -- build-time Kaggle ingestion
+scripts/fetch-kaggle-data.ts       -- build-time Kaggle ingestion
+scripts/seed-supabase-from-kaggle.ts -- seed zip_tax_metrics + zip_boundaries
+scripts/import-zcta-boundaries.ts  -- boundary-only import/upsert
 public/data/                  -- sample data + kaggle/ artifacts (gitignored)
 ```
 

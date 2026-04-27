@@ -7,6 +7,9 @@
   },
   "scripts": {
     "build:data": "tsx scripts/fetch-kaggle-data.ts",
+    "seed:supabase": "tsx scripts/seed-supabase-from-kaggle.ts",
+    "import:zcta": "tsx scripts/import-zcta-boundaries.ts",
+    "import:irs:soi": "tsx scripts/import-irs-soi-csv.ts",
     "prebuild": "tsx scripts/fetch-kaggle-data.ts",
     "predev": "tsx scripts/ensure-kaggle-data.ts",
     "dev": "next dev",
@@ -25,6 +28,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.7",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-slot": "^1.2.0",
+    "@supabase/supabase-js": "^2.105.0",
     "@turf/turf": "^7.2.0",
     "adm-zip": "^0.5.16",
     "class-variance-authority": "^0.7.1",
