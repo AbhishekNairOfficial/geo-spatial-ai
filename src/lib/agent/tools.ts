@@ -1,10 +1,6 @@
 import type { DataProvider } from "@/lib/data";
+import { extractZipCodesFromText } from "@/lib/geo/extractZipCodesFromText";
 import type { DatasetSummary } from "@/lib/llm/types";
-
-function extractZipCodes(message: string): string[] {
-  const matches = message.match(/\b\d{5}\b/g) ?? [];
-  return Array.from(new Set(matches));
-}
 
 function inferTopN(message: string): number | null {
   const m = message.match(/\btop\s+(\d{1,4})\b/i);
@@ -33,7 +29,7 @@ export async function getStructuredDataContext(args: {
   const { message, summary, dataProvider } = args;
   if (summary.geography !== "us_zip") return null;
 
-  const zips = extractZipCodes(message);
+  const zips = extractZipCodesFromText(message);
   const topN = inferTopN(message);
   if (zips.length === 0 && !topN) return null;
 

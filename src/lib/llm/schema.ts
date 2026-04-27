@@ -144,7 +144,7 @@ export const assistantResponseJsonSchema = {
       geoFeatures: {
         type: "array",
         description:
-          "Map highlights. US ZIP: use 5-digit id and polygon/MultiPolygon geometry, or leave empty and use highlightTopN / highlightZipCodes. World: use ISO-3 for id when country-keyed.",
+          "Map highlights. For US ZIP (ZCTA) data: leave empty — the server fills ZCTA polygons; use highlightTopN / highlightZipCodes only. World country mode: use ISO-3 for id and polygon/MultiPolygon geometry in geoFeatures as needed.",
         items: {
           type: "object",
           additionalProperties: false,
@@ -229,7 +229,7 @@ export const assistantResponseJsonSchema = {
         type: "array",
         items: { type: "string" },
         description:
-          "5-digit ZIPs to show when using explicit rule-based selection. Empty if using highlightTopN or raw geoFeatures only.",
+          "5-digit US ZIPs to show for explicit selection (server draws ZCTA shapes). User-mentioned ZIPs in the latest message are merged in server-side. Empty if using only highlightTopN. Do not use geoFeatures for US ZIP map outlines.",
       },
       highlightMetric: {
         type: "string",

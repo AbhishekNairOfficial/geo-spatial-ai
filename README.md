@@ -131,9 +131,15 @@ should set:
   `highlightZipCodes: ["90210", "10001", ...]`. The server again resolves
   geometry from the ingested layer.
 
-You can still return `geoFeatures` with real GeoJSON from the model, but
-relying on `highlightTopN` / `highlightZipCodes` avoids the model outputting
-large polygon coordinates.
+**Map shapes:** The server always fills `geoFeatures` with Census ZCTA
+polygons from the data provider. The model should leave `geoFeatures` empty
+for this mode and set `highlightTopN` and/or `highlightZipCodes` only. User
+5-digit codes in the chat are merged into `highlightZipCodes` for lookup.
+
+**Supabase** requires rows in the `zip_boundaries` table for each ZIP to draw
+a real outline. After seeding tax rows, run `npm run import:zcta` (uses
+`public/data/kaggle/features.geojson` by default, or set `ZCTA_GEOJSON_PATH`)
+if boundaries are missing.
 
 ## Using Supabase as runtime data source
 
@@ -186,14 +192,20 @@ This repo now supports `DATA_PROVIDER=supabase` for runtime ZIP tax + boundary l
    The importer auto-detects year from filename prefix (`19` -> 2019, etc) and writes
    one row per `(zip, year)` to `zip_tax_metrics`.
 
-4. Optional boundary-only refresh:
+4. **ZCTA boundaries (required for real map outlines, not axis-aligned
+   placeholders).** If `zip_boundaries` is empty or incomplete, run one of:
+
+   - After Kaggle `build:data`, upsert from the built GeoJSON (default):
 
    ```bash
    npm run import:zcta
    ```
 
-   By default this reads `public/data/kaggle/features.geojson`. Override with
-   `ZCTA_GEOJSON_PATH=/absolute/path/to/features.geojson`.
+   - Or `npm run seed:supabase` which can seed both `zip_tax_metrics` and
+   `zip_boundaries` from `public/data/kaggle/` in one go.
+
+   By default `import:zcta` reads `public/data/kaggle/features.geojson`. Override
+   with `ZCTA_GEOJSON_PATH=/absolute/path/to/features.geojson`.
 
 ## Deploying to Vercel
 

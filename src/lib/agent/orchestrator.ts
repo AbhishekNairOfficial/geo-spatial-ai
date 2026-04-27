@@ -83,7 +83,9 @@ export async function orchestrateChat(args: {
     responseSchema: assistantResponseJsonSchema.schema as Record<string, unknown>,
   });
 
-  payload = await applyZipDataEnrichment(summary, dataProvider, payload);
+  payload = await applyZipDataEnrichment(summary, dataProvider, payload, {
+    latestUserMessage: prompt,
+  });
   payload = ensureAssistantMessage(payload);
 
   console.info("[orchestrator] completed", {
