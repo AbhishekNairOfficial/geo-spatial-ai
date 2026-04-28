@@ -29,7 +29,7 @@ export default function ChatInput() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Enter Site ID or Scenario..."
-        className="h-12 w-full rounded-2xl border border-[color:var(--color-border)] bg-white px-4 pr-14 text-sm text-[color:var(--color-foreground)] outline-none placeholder:text-[color:var(--color-muted-foreground)] focus:border-[color:var(--color-primary)]"
+        className="h-12 w-full rounded-2xl border border-[color:var(--color-border)] bg-[var(--glass-input-bg)] px-4 pr-14 text-sm text-[color:var(--color-foreground)] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] outline-none placeholder:text-[color:var(--color-muted-foreground)] backdrop-blur-sm focus:border-[color:var(--color-primary)]"
         disabled={isSending}
       />
       <button

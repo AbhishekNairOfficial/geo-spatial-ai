@@ -11,7 +11,7 @@ export default function ChatPanel() {
   const reset = useChatStore((s) => s.reset);
 
   return (
-    <section className="pointer-events-auto flex h-full w-[353px] flex-col overflow-hidden rounded-3xl bg-white px-4 pb-4 pt-6 shadow-[var(--shadow-soft)]">
+    <section className="geo-glass pointer-events-auto flex h-full w-[353px] flex-col overflow-hidden rounded-3xl px-4 pb-4 pt-6">
       <header className="flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
           <div className="grid size-6 place-items-center rounded-md bg-[color:var(--color-accent)]">
@@ -36,7 +36,7 @@ export default function ChatPanel() {
       </div>
 
       <div className="relative">
-        <div className="pointer-events-none absolute -top-8 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
+        <div className="pointer-events-none absolute -top-8 left-0 right-0 h-8 bg-gradient-to-t from-[var(--glass-fade)] to-transparent" />
         <ChatInput />
       </div>
     </section>

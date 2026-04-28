@@ -17,7 +17,7 @@ export default function KpiCard({ kpi }: { kpi: Kpi }) {
   const direction = kpi.direction ?? "flat";
 
   return (
-    <article className="flex flex-col gap-3 rounded-3xl bg-white p-5 shadow-[var(--shadow-card)]">
+    <article className="geo-glass-card flex flex-col gap-3 rounded-3xl p-5">
       <header className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium text-[color:var(--color-muted)]">
           {kpi.label}

@@ -24,6 +24,15 @@
 
   --shadow-card: 0 1px 5px 0 rgba(30, 30, 31, 0.1);
   --shadow-soft: 0.25px 0.5px 4px 0 rgba(112, 112, 112, 0.1);
+  --shadow-header: 0 1px 2.5px 0 rgba(30, 30, 31, 0.1);
+
+  /* Liquid glass — frosted panels over the map */
+  --glass-bg: rgba(255, 255, 255, 0.42);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-card-bg: rgba(255, 255, 255, 0.52);
+  --glass-input-bg: rgba(255, 255, 255, 0.58);
+  --glass-fade: rgba(255, 255, 255, 0.5);
+  --glass-blur: 20px;
 }
 
 html,
@@ -41,6 +50,38 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+.geo-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.12);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.12);
+}
+
+.geo-glass-header {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-header);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.12);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.12);
+}
+
+.geo-glass-card {
+  background: var(--glass-card-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  backdrop-filter: blur(14px) saturate(1.08);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .geo-glass,
+  .geo-glass-header,
+  .geo-glass-card {
+    background: rgba(255, 255, 255, 0.9);
+  }
 }
 
 /* deck.gl / mapbox overrides */
@@ -64,10 +105,12 @@ body {
 .map-tooltip-geo {
   font-family: var(--font-sans);
   color: var(--color-foreground);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 1.5rem;
   box-shadow: var(--shadow-card);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: blur(16px) saturate(1.1);
   padding: 1.1rem 1.35rem 1.2rem;
   min-width: 12.5rem;
   max-width: 19rem;
